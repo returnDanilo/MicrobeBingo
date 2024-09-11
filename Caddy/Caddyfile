@@ -1,0 +1,25 @@
+{
+	log default {
+		include http.log.access
+		format json
+		output file /logs/caddy.log {
+			roll_size 10MiB
+			roll_uncompressed
+			roll_local_time
+			roll_keep 3
+		}
+	}
+}
+
+microbebingo.org {
+	root * /public
+	file_server
+	try_files {path} cards/{path}
+	header hello-you-reading-this "I'm curious how you ended up here! Say hi to me! :D"
+	log
+}
+
+www.microbebingo.org {
+	redir https://microbebingo.org{uri}
+	log
+}

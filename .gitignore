@@ -1,0 +1,12 @@
+# Env vars with credentials
+credentials
+
+# Logs may leak credentials
+logs/*
+
+# Don't commit your SSL keys by mistake!
+Caddy/data/*
+
+last_heartbeat
+entered_channels.txt
+docker-compose

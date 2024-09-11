@@ -1,0 +1,51 @@
+services:
+  caddy:
+    image: caddy:2.8
+    user: "444:444"
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - TZ=America/Sao_Paulo
+    volumes:
+      - ./Caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddy/config:/config
+      - ./Caddy/data:/data
+      - ./public:/public:ro
+      - ./logs:/logs
+  carddealer:
+    build:
+      context: ./CardDealer
+      args:
+        - UNPRIV_UID_GID=444
+    restart: unless-stopped
+    env_file: credentials
+    depends_on:
+      caddy:
+        condition: service_started
+    environment:
+      - PYTHONUNBUFFERED=1 # Make python logs appear on docker-compose screen immediately 
+      - TZ=America/Sao_Paulo # Print dates in my timezone
+    volumes:
+      - ./entered_channels.txt:/app/entered_channels.txt
+      - ./public/cards/:/var/www/html/cards/
+      - ./logs:/app/logs
+  watchdog:
+    build:
+      context: ./Watchdog
+      args:
+        - UNPRIV_UID_GID=444
+    restart: unless-stopped
+    env_file: credentials
+    depends_on:
+      carddealer:
+        condition: service_started
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=America/Sao_Paulo
+    volumes:
+      - ./last_heartbeat:/app/last_heartbeat
