@@ -221,7 +221,7 @@ Here is how I set up my VM:
 1. Copy files over and set their permissions:
 
 		rsync --verbose --progress --recursive --exclude ".git" /your_local_machine/microbebingo myvm:"~"
-		ssh myvm "~/microbebingo/setperms.sh"
+		ssh myvm "~/microbebingo/permissions_setter.sh"
 
 1. ssh in using the `myvmTmux` alias when you want to get a shell. Use the `myvm` alias otherwise.
 
