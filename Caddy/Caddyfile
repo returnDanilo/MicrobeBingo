@@ -15,7 +15,7 @@ microbebingo.org {
 	root * /public
 	file_server
 	try_files {path} cards/{path}
-	header hello-you-reading-this "I'm curious how you ended up here! Say hi to me! :D"
+	header hello-you-reading-this "I'm curious how you ended up here! Say hi to me at hellofromhttpheader@microbebingo.org! :D"
 	log
 }
 
