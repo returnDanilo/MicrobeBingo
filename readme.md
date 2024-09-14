@@ -2,8 +2,6 @@
 
 A twitch chatbot that sends you microbe-themed bingo cards upon request!
 
----
-
 ### How to invite the bot into your chat
 
 1. Go to [twitch.tv/microbebingo](https://twitch.tv/microbebingo) and type `!bingoenter`.

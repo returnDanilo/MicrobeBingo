@@ -3,15 +3,11 @@
 set -e
 
 echo Copying files...
-# Tip: You can use --delete if you want to be more destructive 😈
-rsync --recursive --exclude .git -- "$(dirname $0)" myvm:/home/dan/microbebingo
+rsync --recursive --exclude .git -- "$(dirname $0)" myvm:"~/microbebingo" # Tip: You can use --delete to be more destructive 😈
 
 echo Setting permissions...
-ssh myvm /home/dan/microbebingo/permissions_setter.sh
+ssh myvm "~/microbebingo/permissions_setter.sh"
 
-echo Restarting containers...
-ssh myvm "bash -c 'cd microbebingo && ./docker-compose restart'"
+echo Building and restarting containers if needed...
+ssh myvm "cd microbebingo && ./docker-compose up -d --build && ./docker-compose restart caddy" # Caddyfile is not in an image so changes won't be picked up by the build process
 
-echo
-echo
-echo Friendly reminder: Only restarted containers. Depending on your change, you might need to rebuild them too.
