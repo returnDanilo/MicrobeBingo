@@ -2,7 +2,7 @@ services:
   caddy:
     image: caddy:2.8
     user: "444:444"
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
       - "443:443"
@@ -22,7 +22,7 @@ services:
       context: ./CardDealer
       args:
         - UNPRIV_UID_GID=444
-    restart: unless-stopped
+    restart: always
     env_file: credentials
     depends_on:
       caddy:
@@ -39,7 +39,7 @@ services:
       context: ./Watchdog
       args:
         - UNPRIV_UID_GID=444
-    restart: unless-stopped
+    restart: always
     env_file: credentials
     depends_on:
       carddealer:
