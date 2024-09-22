@@ -29,29 +29,37 @@ async def remove_old_cards():
 
 @routines.routine(hours=1337)
 async def token_refresher():
-	# Note: This command will fail if you have more than 50 valid access tokens at a time.
+	# Note: This request will fail if you have >50 valid access tokens at a time.
 	url = "https://id.twitch.tv/oauth2/token"
 	headers = { "Content-Type": "application/x-www-form-urlencoded" }
 	data = { "client_id": environ["CLIENT_ID"],
 			 "client_secret": environ["CLIENT_SECRET"],
 			 "grant_type": "refresh_token",
 			 "refresh_token": environ["CARDDEALER_REFRESH_TOKEN"] }
-
 	resp = requests.post(url, data=data, headers=headers)
 
 	if resp.status_code != 200:
 		raise Exception("Refresh token became invalid") if resp.status_code == 401 else Exception("Something bad happened")
 
-	bot._connection._token = resp.json()["access_token"]
 	environ["CARDDEALER_ACCESS_TOKEN"] = resp.json()["access_token"]
+
+	try: # bot is undefined at first
+		bot._connection._token = resp.json()["access_token"]
+	except NameError:
+		pass
 
 	next_refresh = datetime.now() +timedelta(seconds=resp.json()["expires_in"]) -timedelta(minutes=1)
 	token_refresher.change_interval(time=next_refresh, wait_first=True)
 
+try: # make sure that when the bot object is initialized it has acess to a valid token. if you start the task in the bot constructor, it may not finish in time
+	task = token_refresher.start()
+	task.get_loop().run_until_complete(task)
+except asyncio.exceptions.CancelledError: # I don't know why this is raised every time
+	pass
+
 class MyBot(commands.Bot):
 
 	def __init__(self):
-		token_refresher.start()
 		super().__init__(token=environ["CARDDEALER_ACCESS_TOKEN"], prefix='!', initial_channels=[*entered_channels,BOT_CHANNEL_NAME])
 
 	async def event_ready(self):

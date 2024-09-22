@@ -15,16 +15,15 @@ REPLY_TO_LOOK_FOR = "Here's your card"
 async def ask_for_card():
 	await bot.get_channel(WATCHDOG_USERNAME).send("!getcard")
 
-# Note: This fails when there are >50 valid access tokens at the same time because of a twitch-enforced limit.
 @routines.routine(hours=1337)
 async def token_refresher():
-
+	# Note: This request will fail if you have >50 valid access tokens at a time.
 	url = "https://id.twitch.tv/oauth2/token"
+	headers = { "Content-Type": "application/x-www-form-urlencoded" }
 	data = { "client_id": environ["CLIENT_ID"],
 			 "client_secret": environ["CLIENT_SECRET"],
 			 "grant_type": "refresh_token",
 			 "refresh_token": environ["WATCHDOG_REFRESH_TOKEN"] }
-	headers = { "Content-Type": "application/x-www-form-urlencoded" }
 	resp = requests.post(url, data=data, headers=headers)
 
 	if resp.status_code != 200:
@@ -37,13 +36,10 @@ async def token_refresher():
 	except NameError:
 		pass
 
-	print(f"Got new token: {resp.json()['access_token']}")
-
 	next_refresh = datetime.now() +timedelta(seconds=resp.json()["expires_in"]) -timedelta(minutes=1)
-	print(next_refresh)
 	token_refresher.change_interval(time=next_refresh, wait_first=True)
 
-try:
+try: # make sure that when the bot object is initialized it has acess to a valid token. if you start the task in the bot constructor, it may not finish in time
 	task = token_refresher.start()
 	task.get_loop().run_until_complete(task)
 except asyncio.exceptions.CancelledError: # I don't know why this is raised every time
