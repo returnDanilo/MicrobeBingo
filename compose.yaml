@@ -28,8 +28,8 @@ services:
       caddy:
         condition: service_started
     environment:
-      - PYTHONUNBUFFERED=1 # Make python logs appear on docker-compose screen immediately 
-      - TZ=America/Sao_Paulo # Print dates in my timezone
+      - PYTHONUNBUFFERED=1 # flush logs immediately 
+      - TZ=America/Sao_Paulo # log dates in my timezone
     volumes:
       - ./entered_channels.txt:/app/entered_channels.txt
       - ./public/cards/:/var/www/html/cards/

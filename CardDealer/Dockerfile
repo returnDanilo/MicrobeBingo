@@ -6,6 +6,9 @@ WORKDIR /app
 RUN chmod u=rx,g=,o= /app
 RUN chown $UNPRIV_UID_GID:$UNPRIV_UID_GID /app
 
+RUN apt update
+RUN apt install ffmpeg -y
+
 COPY --chown=$UNPRIV_UID_GID:$UNPRIV_UID_GID requirements.txt requirements.txt
 RUN pip install --no-cache-dir --requirement requirements.txt
 

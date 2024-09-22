@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-import string, asyncio, requests, subprocess, logging, logging.config, yaml, signal, sys
+import string, asyncio, requests, subprocess, logging, logging.config, yaml, signal, sys, re
 from datetime import datetime, timedelta
 from os import path, listdir, remove, environ
+from urllib.request import urlretrieve, urlcleanup
 from pathlib import Path
+from base64 import b64encode
 from twitchio.ext import commands, routines
+from openai import OpenAI
 # import code
 # code.interact(local=locals())
 
@@ -25,7 +28,6 @@ async def remove_old_cards():
 		filepath = path.join(CARDS_DIR, filename)
 		if now -datetime.fromtimestamp(path.getmtime(filepath)) > timedelta(hours=48):
 			remove(filepath)
-			print(f"Removed: {filepath}")
 
 @routines.routine(hours=1337)
 async def token_refresher():
@@ -56,6 +58,7 @@ try: # make sure that when the bot object is initialized it has acess to a valid
 	task.get_loop().run_until_complete(task)
 except asyncio.exceptions.CancelledError: # I don't know why this is raised every time
 	pass
+client = OpenAI()
 
 class MyBot(commands.Bot):
 
@@ -86,6 +89,68 @@ class MyBot(commands.Bot):
 
 		if ctx.author.name != HEALTH_CHECKER_NAME: # don't polute the log
 			logger.info("getcard,{}".format({"author":ctx.author.name,"channel":ctx.channel.name,"piccode":piccode}))
+
+	@commands.command()
+	async def theheck(self, ctx: commands.Context):
+		broadcaster = await ctx.channel.user()
+		url = "https://api.twitch.tv/helix/clips?broadcaster_id=" +str(broadcaster.id)
+		headers = { "Authorization": "Bearer "+environ["CARDDEALER_ACCESS_TOKEN"],
+					"Client-Id": environ["CLIENT_ID"] }
+		resp = requests.post(url, headers=headers) # reminder: POST makes a clip. GET lists them
+		if resp.status_code == 202: # success! now we wait for the clip to be done cooking
+			await ctx.send(f"{ctx.author.name} 🔎 Trying to identify microbe currently on screen... (this will take a few seconds) Keep in mind this is an experimental feature, likely to make mistakes ;)")
+			await asyncio.sleep(15) # twitch docs: one should consider it a failed clip attempt if after 15s you still get no response
+
+			clip_id = resp.json()["data"][0]["id"]
+			url = f"https://api.twitch.tv/helix/clips?id=" +clip_id
+			headers = { "Authorization": "Bearer "+environ["CARDDEALER_ACCESS_TOKEN"],
+						"Client-Id": environ["CLIENT_ID"] }
+			resp = requests.get(url, headers=headers)
+
+			if resp.status_code == 200 and resp.json()["data"] and clip_id == resp.json()["data"][0]["id"]: # 'data' is empty when the clip is either not done processing, or failed to be processed
+				mp4_url = re.sub("-preview.*", ".mp4", resp.json()["data"][0]["thumbnail_url"])
+				tmp_mp4,_ = urlretrieve(mp4_url) # puts in /tmp by default
+				tmp_png = tmp_mp4 +".png"
+				subprocess.run(["ffmpeg","-sseof","-5","-i",tmp_mp4,"-frames:v","1","-update","1",tmp_png],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+
+				TEXT_PROMPT = "The following is a microscope image. Please describe what microorganism is approximately at the center of the screen. What species or family could it be? What's its usual behaviour?What does it like to do? What does it eat? If you can't make out what organism that is, tell me your best guess. You can use emojis if you want to, but it's not mandatory. Make sure your response is shorter than 400 characters."
+				image_prompt = b64encode(Path(tmp_png).read_bytes()).decode('utf-8')
+				IMG_MIMETYPE = "image/png"
+
+				for i in range(10):
+					try:
+						completion = client.chat.completions.create(
+							model="gpt-4o-mini",
+							messages=[{"role":"user","content": [
+									{"type":"text","text": TEXT_PROMPT},
+									{"type":"image_url","image_url":{"url":f"data:{IMG_MIMETYPE};base64,{image_prompt}","detail":"high"},},],}],)
+
+						if completion.choices[0].message.refusal != None:
+							raise Exception("Model refused to answer.")
+
+						if len(chat_reply := f"{ctx.author.name} {completion.choices[0].message.content}") > 500:
+							raise Exception("Generated completion is too long.")
+
+						await ctx.send(chat_reply)
+
+					except Exception as e:
+						print(f"Supressing exception: {e}")
+						continue
+
+					break
+				else:
+					await ctx.send(f"{ctx.author.name} Failed to get an AI response after a few tries!")
+
+				urlcleanup()
+				subprocess.run(["rm", tmp_png])
+			else:
+				await ctx.send(f"{ctx.author.name} Something went wrong! Probably on twitch's side.")
+		else:
+			await ctx.send(f"{ctx.author.name} Failed to take screenshot! Maybe the stream is offline? Or clipping is disabled? Or follower-only/sub-only clipping is enabled?")
+
+	@commands.command(aliases=["test?"])
+	async def test(self, ctx: commands.Context):
+		await ctx.send(f"{ctx.author.name} test...")
 
 	@commands.command()
 	async def bingoenter(self, ctx: commands.Context):

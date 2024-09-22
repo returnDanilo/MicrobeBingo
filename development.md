@@ -57,7 +57,7 @@ These are instructions for developers. If you want to make normal use of the bot
 
 Using your CHATBOT ACCOUNT, open in the browser:
 
-	https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=...&force_verify=true&scope=chat:read+chat:edit&redirect_uri=https://microbebingo.org/myendpoint
+	https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=...&force_verify=true&scope=chat:read+chat:edit+clips:edit&redirect_uri=https://microbebingo.org/myendpoint
 
 Once you authorize it, you will be redirected and the URL will contain `code` value.
 (it may take a little bit, as you have to wait for the redirection fail because there's noone listening on the other side. you can look in the page source if you don't want to wait)
