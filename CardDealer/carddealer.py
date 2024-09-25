@@ -11,6 +11,15 @@ from openai import OpenAI
 # import code
 # code.interact(local=locals())
 
+# Cancel tasks before exiting otherwise logging will complain. See https://stackoverflow.com/a/64690062/13412674.
+def ctrl_c_handler(sig, frame):
+	# This is not a complete graceful shutdown, but it's good enough.
+	for task in asyncio.all_tasks(bot.loop):
+		task.cancel()
+	raise KeyboardInterrupt
+signal.signal(signal.SIGINT, ctrl_c_handler)
+signal.signal(signal.SIGTERM, ctrl_c_handler)
+
 logger = logging.getLogger("microbebingo")
 logging.config.dictConfig(yaml.safe_load(Path("logconfig.yaml").read_text()))
 
@@ -45,20 +54,13 @@ async def token_refresher():
 
 	environ["CARDDEALER_ACCESS_TOKEN"] = resp.json()["access_token"]
 
-	try: # bot is undefined at first
+	try: # 'bot' is undefined at first
 		bot._connection._token = resp.json()["access_token"]
 	except NameError:
 		pass
 
 	next_refresh = datetime.now() +timedelta(seconds=resp.json()["expires_in"]) -timedelta(minutes=1)
 	token_refresher.change_interval(time=next_refresh, wait_first=True)
-
-try: # make sure that when the bot object is initialized it has acess to a valid token. if you start the task in the bot constructor, it may not finish in time
-	task = token_refresher.start()
-	task.get_loop().run_until_complete(task)
-except asyncio.exceptions.CancelledError: # I don't know why this is raised every time
-	pass
-client = OpenAI()
 
 class MyBot(commands.Bot):
 
@@ -97,6 +99,7 @@ class MyBot(commands.Bot):
 		headers = { "Authorization": "Bearer "+environ["CARDDEALER_ACCESS_TOKEN"],
 					"Client-Id": environ["CLIENT_ID"] }
 		resp = requests.post(url, headers=headers) # reminder: POST makes a clip. GET lists them
+
 		if resp.status_code == 202: # success! now we wait for the clip to be done cooking
 			await ctx.send(f"{ctx.author.name} 🔎 Trying to identify microbe currently on screen... (this will take a few seconds) Keep in mind this is an experimental feature, likely to make mistakes ;)")
 			await asyncio.sleep(15) # twitch docs: one should consider it a failed clip attempt if after 15s you still get no response
@@ -180,13 +183,14 @@ class MyBot(commands.Bot):
 
 		logger.info("bingoleave,{}".format({"author":ctx.author.name,"channel":ctx.channel.name}))
 
-# Cancel tasks before exiting otherwise logging will complain. See https://stackoverflow.com/a/64690062/13412674. This is not a complete graceful shutdown, but it's good enough.
-def ctrl_c_handler(sig, frame):
-	for task in asyncio.all_tasks(bot.loop):
-		task.cancel()
-	raise KeyboardInterrupt
-signal.signal(signal.SIGINT, ctrl_c_handler)
-signal.signal(signal.SIGTERM, ctrl_c_handler)
+client = OpenAI()
+
+# Make sure 'bot' has a valid token when initialized.
+first_token_refresh_task = token_refresher.start()
+try: 
+	first_token_refresh_task.get_loop().run_until_complete(first_token_refresh_task)
+except asyncio.exceptions.CancelledError: # change_interval() cancels the current task and creates a new one, even though the token_refresher() corotine finishes successfully.
+	pass
 
 bot = MyBot()
 bot.run()
