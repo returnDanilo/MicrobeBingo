@@ -12,6 +12,12 @@ A twitch chatbot that sends you microbe-themed bingo cards upon request!
 1. Type `!bingoleave` in your chat.
 1. *Done!* The bot will not send messages in your chat anymore.
 
+### How to use the chatgpt integration
+
+1. Type `!theheck`.
+1. Wait a few seconds..
+1. *Done!* The bot should reply in chat with a chatgpt to description of the creature on the screen!
+
 ### Info for developers
 
 If you want to compile the source code yourself, see instructions [here](development.md).
