@@ -23,8 +23,8 @@ signal.signal(signal.SIGTERM, ctrl_c_handler)
 logger = logging.getLogger("microbebingo")
 logging.config.dictConfig(yaml.safe_load(Path("logconfig.yaml").read_text()))
 
-BOT_CHANNEL_NAME = "microbebingo"
-HEALTH_CHECKER_NAME = "dogelectus"
+CARDDEALER_USERNAME = "microbebingo"
+WATCHDOG_USERNAME = "dogelectus"
 ENTERED_CHANNELS_PATH = "entered_channels.txt"
 CARDS_DIR = "/var/www/html/cards/"
 
@@ -65,7 +65,7 @@ async def token_refresher():
 class MyBot(commands.Bot):
 
 	def __init__(self):
-		super().__init__(token=environ["CARDDEALER_ACCESS_TOKEN"], prefix='!', initial_channels=[*entered_channels,BOT_CHANNEL_NAME])
+		super().__init__(token=environ["CARDDEALER_ACCESS_TOKEN"], prefix='!', initial_channels=[*entered_channels,CARDDEALER_USERNAME])
 
 	async def event_ready(self):
 		print(f"=========================================")
@@ -89,7 +89,7 @@ class MyBot(commands.Bot):
 		piccode = subprocess.run(['python3', 'make_bingo_card.py'], capture_output=True, text=True).stdout.strip()
 		await ctx.send(f"{ctx.author.name} Here's your card: GivePLZ microbebingo.org/{piccode}.png")
 
-		if ctx.author.name != HEALTH_CHECKER_NAME: # don't polute the log
+		if ctx.author.name != WATCHDOG_USERNAME: # don't polute the log
 			logger.info("getcard,{}".format({"author":ctx.author.name,"channel":ctx.channel.name,"piccode":piccode}))
 
 	@commands.command()
@@ -98,11 +98,13 @@ class MyBot(commands.Bot):
 		url = "https://api.twitch.tv/helix/clips?broadcaster_id=" +str(broadcaster.id)
 		headers = { "Authorization": "Bearer "+environ["CARDDEALER_ACCESS_TOKEN"],
 					"Client-Id": environ["CLIENT_ID"] }
-		resp = requests.post(url, headers=headers) # reminder: POST makes a clip. GET lists them
+		resp = requests.post(url, headers=headers) # POST clips. GET lists
 
-		if resp.status_code == 202: # success! now we wait for the clip to be done cooking
+		if resp.status_code == 202: # clip creation requested successfully!
 			await ctx.send(f"{ctx.author.name} 🔎 Trying to identify microbe currently on screen... (this will take a few seconds) Keep in mind this is an experimental feature, likely to make mistakes ;)")
-			await asyncio.sleep(15) # twitch docs: one should consider it a failed clip attempt if after 15s you still get no response
+
+			# wait for the clip to be done cooking..
+			await asyncio.sleep(15)
 
 			clip_id = resp.json()["data"][0]["id"]
 			url = f"https://api.twitch.tv/helix/clips?id=" +clip_id
@@ -110,14 +112,16 @@ class MyBot(commands.Bot):
 						"Client-Id": environ["CLIENT_ID"] }
 			resp = requests.get(url, headers=headers)
 
-			if resp.status_code == 200 and resp.json()["data"] and clip_id == resp.json()["data"][0]["id"]: # 'data' is empty when the clip is either not done processing, or failed to be processed
+			# from twitch docs: consider it a failed clip attempt if after 15s you still get no response.
+			# 'data' is empty when the clip is either not done processing, or failed to be processed.
+			if resp.status_code == 200 and resp.json()["data"] and clip_id == resp.json()["data"][0]["id"]:
 				mp4_url = re.sub("-preview.*", ".mp4", resp.json()["data"][0]["thumbnail_url"])
-				tmp_mp4,_ = urlretrieve(mp4_url) # puts in /tmp by default
-				tmp_png = tmp_mp4 +".png"
-				subprocess.run(["ffmpeg","-sseof","-5","-i",tmp_mp4,"-frames:v","1","-update","1",tmp_png],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+				video_path, _ = urlretrieve(mp4_url) # downloads into /tmp
+				screenshot_path = video_path +".png"
+				subprocess.run(["ffmpeg","-sseof","-5","-i",video_path,"-frames:v","1","-update","1",screenshot_path],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
 				TEXT_PROMPT = "The following is a microscope image. Please describe what microorganism is approximately at the center of the screen. What species or family could it be? What's its usual behaviour?What does it like to do? What does it eat? If you can't make out what organism that is, tell me your best guess. You can use emojis if you want to, but it's not mandatory. Make sure your response is shorter than 400 characters."
-				image_prompt = b64encode(Path(tmp_png).read_bytes()).decode('utf-8')
+				image_prompt = b64encode(Path(screenshot_path).read_bytes()).decode('utf-8')
 				IMG_MIMETYPE = "image/png"
 
 				for i in range(10):
@@ -145,7 +149,7 @@ class MyBot(commands.Bot):
 					await ctx.send(f"{ctx.author.name} Failed to get an AI response after a few tries!")
 
 				urlcleanup()
-				subprocess.run(["rm", tmp_png])
+				subprocess.run(["rm", screenshot_path])
 			else:
 				await ctx.send(f"{ctx.author.name} Something went wrong! Probably on twitch's side.")
 		else:
@@ -157,7 +161,7 @@ class MyBot(commands.Bot):
 
 	@commands.command()
 	async def bingoenter(self, ctx: commands.Context):
-		if ctx.channel.name == BOT_CHANNEL_NAME:
+		if ctx.channel.name == CARDDEALER_USERNAME:
 			await ctx.send(f"{ctx.author.name} Ok! I entered your chat CoolStoryBob Use !bingoleave if you want me to go away.")
 			if not ctx.author.name in entered_channels and all([l in string.ascii_letters+string.digits for l in ctx.author.name]):
 				await self.join_channels([ctx.author.name])
@@ -172,7 +176,7 @@ class MyBot(commands.Bot):
 
 	@commands.command()
 	async def bingoleave(self, ctx: commands.Context):
-		if ctx.channel.name in [BOT_CHANNEL_NAME, ctx.author.name]:
+		if ctx.channel.name in [CARDDEALER_USERNAME, ctx.author.name]:
 			await ctx.send(f"{ctx.author.name} Leaving this chat now! Boop beep MrDestructoid")
 			await self.part_channels([ctx.author.name])
 			

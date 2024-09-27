@@ -7,6 +7,13 @@ from twitchio.ext import commands, routines
 #import code
 #code.interact(local=locals())
 
+def ctrl_c_handler(sig, frame):
+	for task in asyncio.all_tasks(bot.loop):
+		task.cancel()
+	raise KeyboardInterrupt
+signal.signal(signal.SIGINT, ctrl_c_handler)
+signal.signal(signal.SIGTERM, ctrl_c_handler)
+
 CARDDEALER_USERNAME = "microbebingo"
 WATCHDOG_USERNAME = "dogelectus"
 REPLY_TO_LOOK_FOR = "Here's your card"
@@ -15,9 +22,9 @@ REPLY_TO_LOOK_FOR = "Here's your card"
 async def ask_for_card():
 	await bot.get_channel(WATCHDOG_USERNAME).send("!getcard")
 
+# refer to the carddealer implementation should any code be modified
 @routines.routine(hours=1337)
 async def token_refresher():
-	# Note: This request will fail if you have >50 valid access tokens at a time.
 	url = "https://id.twitch.tv/oauth2/token"
 	headers = { "Content-Type": "application/x-www-form-urlencoded" }
 	data = { "client_id": environ["CLIENT_ID"],
@@ -25,25 +32,16 @@ async def token_refresher():
 			 "grant_type": "refresh_token",
 			 "refresh_token": environ["WATCHDOG_REFRESH_TOKEN"] }
 	resp = requests.post(url, data=data, headers=headers)
-
 	if resp.status_code != 200:
 		raise Exception("Refresh token became invalid") if resp.status_code == 401 else Exception("Something bad happened")
-
 	environ["WATCHDOG_ACCESS_TOKEN"] = resp.json()["access_token"]
-
-	try: # bot is undefined at first
+	try:
 		bot._connection._token = resp.json()["access_token"]
 	except NameError:
 		pass
-
 	next_refresh = datetime.now() +timedelta(seconds=resp.json()["expires_in"]) -timedelta(minutes=1)
 	token_refresher.change_interval(time=next_refresh, wait_first=True)
 
-try: # make sure that when the bot object is initialized it has acess to a valid token. if you start the task in the bot constructor, it may not finish in time
-	task = token_refresher.start()
-	task.get_loop().run_until_complete(task)
-except asyncio.exceptions.CancelledError: # I don't know why this is raised every time
-	pass
 
 class MyBot(commands.Bot):
 	def __init__(self):
@@ -62,15 +60,14 @@ class MyBot(commands.Bot):
 
 	async def event_message(self, msg):
 		if msg.author and msg.author.name == CARDDEALER_USERNAME and REPLY_TO_LOOK_FOR in msg.content:  
-			utime("last_heartbeat") # like a unix "touch"
+			utime("last_heartbeat") # like a unix "touch" command
 
-# Cancel tasks before exiting otherwise logging will complain. See https://stackoverflow.com/a/64690062/13412674. This is not a complete graceful shutdown, but it's good enough.
-def ctrl_c_handler(sig, frame):
-	for task in asyncio.all_tasks(bot.loop):
-		task.cancel()
-	raise KeyboardInterrupt
-signal.signal(signal.SIGINT, ctrl_c_handler)
-signal.signal(signal.SIGTERM, ctrl_c_handler)
+
+task = token_refresher.start()
+try:
+	task.get_loop().run_until_complete(task)
+except asyncio.exceptions.CancelledError:
+	pass
 
 bot = MyBot()
 bot.run()
