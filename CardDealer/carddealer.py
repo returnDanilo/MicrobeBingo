@@ -120,17 +120,24 @@ class MyBot(commands.Bot):
 				screenshot_path = video_path +".png"
 				subprocess.run(["ffmpeg","-sseof","-5","-i",video_path,"-frames:v","1","-update","1",screenshot_path],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
-				TEXT_PROMPT = "The following is a microscope image. Please describe what microorganism is approximately at the center of the screen. What species or family could it be? What's its usual behaviour?What does it like to do? What does it eat? If you can't make out what organism that is, tell me your best guess. You can use emojis if you want to, but it's not mandatory. Make sure your response is shorter than 400 characters."
+				SYSTEM_PROMPT = "You are a helpful twitch chatbot! The following is a microscope image. Please describe what microorganism is approximately at the center of the screen. What species or family could it be? What's its usual behaviour? What does it like to do? What does it eat? If you can't make out what organism that is, tell me your best guess. You can use emojis if you want to, but it's not mandatory. If the image has text anywhere on it, or a person can be seen in it, you can ignore it as it is not relevant; we only care about the microbes. Make sure your response is shorter than 400 characters. In addition to the image, the user may supply some text for context. Keep in mind such context might not be relevant to the image at all; for example, maybe the context is simply asking what is on the screen, or have an emoji, or twitch emote. The context provided might be important, though: if the user asks what's on the top of the screen, or on the corner, or what's the creature next another creature, or describes the creature's shape, you should take that into consideration."
 				image_prompt = b64encode(Path(screenshot_path).read_bytes()).decode('utf-8')
 				IMG_MIMETYPE = "image/png"
+				text_prompt = ctx.message.content
 
 				for i in range(10):
 					try:
 						completion = client.chat.completions.create(
 							model="gpt-4o",
-							messages=[{"role":"user","content": [
-									{"type":"text","text": TEXT_PROMPT},
-									{"type":"image_url","image_url":{"url":f"data:{IMG_MIMETYPE};base64,{image_prompt}","detail":"high"},},],}],)
+							messages=[
+								{ "role": "system", "content": [
+									{ "type": "text", "text": SYSTEM_PROMPT }
+								]},
+								{ "role": "user", "content": [
+									{ "type": "text", "text": text_prompt }, # possible json injection here, but it's ok because the credentials have limited rights(and we're not parsing that bit of the response, so code injection is unlikely)
+									{ "type": "image_url", "image_url": { "url": f"data:{IMG_MIMETYPE};base64,{image_prompt}", "detail":"high" } }
+								]}
+							])
 
 						if completion.choices[0].message.refusal != None:
 							raise Exception("Model refused to answer.")
