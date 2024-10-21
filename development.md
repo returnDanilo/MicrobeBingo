@@ -168,13 +168,13 @@ Here is how I set up my VM:
 		set -e
 		
 		# disable man pages refreshing because it's slow and hangs
-		sudo systemctl disable man-db.timer && sudo systemctl stop man-db.timer
+		sudo systemctl mask man-db.timer && sudo systemctl stop man-db.timer
 		echo "set man-db/auto-update false" | sudo debconf-communicate && sudo dpkg-reconfigure man-db --frontend=noninteractive
 		
 		# make logs more readable by using your timezone
 		sudo timedatectl set-timezone America/Sao_Paulo
 		
-		# reserve our id before installing more software
+		# reserve our uid/gid before installing more software
 		sudo addgroup --gid 444 unpriv
 		sudo adduser --uid 444 --gid 444 --disabled-password --gecos "" unpriv
 		
@@ -196,7 +196,7 @@ Here is how I set up my VM:
 		echo net.core.wmem_max=7500000 | sudo tee -a /etc/sysctl.conf
 		sudo sysctl --system
 		
-		# set shell and remove ugly prompt
+		# set default shell and remove ugly prompt
 		sudo chsh -s /usr/bin/fish $USER
 		fish -c "set -U fish_greeting ''"
 		
