@@ -11,3 +11,6 @@ ssh myvm "~/microbebingo/permissions_setter.sh"
 echo Building and restarting containers if needed...
 ssh myvm "cd microbebingo && ./docker-compose up -d --build && ./docker-compose restart caddy" # Caddyfile is not in an image so changes won't be picked up by the build process
 
+echo Cleaning up...
+ssh myvm "docker system prune --force && docker image prune -a --force" # only prune dangling build cache, not all build cache
+
