@@ -173,7 +173,7 @@ class MyBot(commands.Bot):
 			if ctx.author.name in entered_channels:
 				await ctx.send(f"{ctx.author.name} I already joined this chat OSFrog Use !getcard to get a bingo card.")
 			else:
-				if not all([l in string.ascii_letters +string.digits for l in ctx.author.name]):
+				if not all([l in string.ascii_letters +string.digits +"_" for l in ctx.author.name]):
 					raise Exception(f"Username has werid characters: {ctx.author.name}")
 
 				await ctx.send(f"{ctx.author.name} Ok! I entered your chat CoolStoryBob Use !bingoleave if you want me to go away.")
