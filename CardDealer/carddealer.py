@@ -181,7 +181,7 @@ class MyBot(commands.Bot):
 
 				entered_channels += [ctx.author.name]
 				with open(ENTERED_CHANNELS_PATH, "a") as f:
-					f.write(ctx.author.name+"\n")
+					f.write("\n"+ctx.author.name)
 
 		logger.info("bingoenter,{}".format({"author":ctx.author.name,"channel":ctx.channel.name}))
 
