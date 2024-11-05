@@ -162,33 +162,41 @@ class MyBot(commands.Bot):
 		else:
 			await ctx.send(f"{ctx.author.name} Failed to take screenshot! Maybe the stream is offline? Or clipping is disabled? Or follower-only/sub-only clipping is enabled?")
 
-	@commands.command(aliases=["test?"])
-	async def test(self, ctx: commands.Context):
-		await ctx.send(f"{ctx.author.name} test...")
+	@commands.command()
+	async def ping(self, ctx: commands.Context):
+		await ctx.send(f"{ctx.author.name} Pong!")
 
 	@commands.command()
 	async def bingoenter(self, ctx: commands.Context):
+		global entered_channels
 		if ctx.channel.name == CARDDEALER_USERNAME:
-			await ctx.send(f"{ctx.author.name} Ok! I entered your chat CoolStoryBob Use !bingoleave if you want me to go away.")
-			if not ctx.author.name in entered_channels and all([l in string.ascii_letters+string.digits for l in ctx.author.name]):
+			if ctx.author.name in entered_channels:
+				await ctx.send(f"{ctx.author.name} I already joined this chat OSFrog Use !getcard to get a bingo card.")
+			else:
+				if not all([l in string.ascii_letters +string.digits for l in ctx.author.name]):
+					raise Exception(f"Username has werid characters: {ctx.author.name}")
+
+				await ctx.send(f"{ctx.author.name} Ok! I entered your chat CoolStoryBob Use !bingoleave if you want me to go away.")
 				await self.join_channels([ctx.author.name])
 
-				entered_channels += ctx.author.name
+				entered_channels += [ctx.author.name]
 				with open(ENTERED_CHANNELS_PATH, "a") as f:
 					f.write(ctx.author.name+"\n")
-		else:
-			await ctx.send(f"{ctx.author.name} I already joined this chat OSFrog Use !getcard to get a bingo card.")
 
 		logger.info("bingoenter,{}".format({"author":ctx.author.name,"channel":ctx.channel.name}))
 
 	@commands.command()
 	async def bingoleave(self, ctx: commands.Context):
+		global entered_channels
 		if ctx.channel.name in [CARDDEALER_USERNAME, ctx.author.name]:
-			await ctx.send(f"{ctx.author.name} Leaving this chat now! Boop beep MrDestructoid")
-			await self.part_channels([ctx.author.name])
-			
-			entered_channels.remove(ctx.author.name)
-			Path(ENTERED_CHANNELS_PATH).write_text("\n".join(entered_channels))
+			if ctx.author.name in entered_channels:
+				await ctx.send(f"{ctx.author.name} Leaving your chat now! Boop beep MrDestructoid")
+				await self.part_channels([ctx.author.name])
+
+				entered_channels.remove(ctx.author.name)
+				Path(ENTERED_CHANNELS_PATH).write_text("\n".join(entered_channels))
+			else:
+				await ctx.send(f"{ctx.author.name} I am not currently added to your chat!")
 		else:
 			await ctx.send(f"{ctx.author.name} Only the channel owner can make me leave SeemsGood")
 
