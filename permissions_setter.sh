@@ -1,36 +1,26 @@
 #!/bin/bash
 
 if [ "$(id -u)" -eq 0 ]; then
-  echo "Error. This script should not be run as root. It's intended to be run as a user in the sudoers file. Exiting."
+  echo "This script should not be run as root! It's intended to be run as a user with sudo powers. Exiting."
   exit 1
 fi
 
+# Everything else should be disallowed for containers
+sudo chown -R $USER:$USER ~/microbebingo
+sudo chmod -R u=rwX,g=,o= ~/microbebingo
+
 cd ~/microbebingo
 
-mkdir -p logs
-mkdir -p public/cards
+# Create things if they don't exist
+sudo touch last_heartbeat entered_channels
+sudo mkdir -p logs public/cards
 
-sudo chown -R $USER:$USER ~
-sudo chmod -R u=rw,g=,o= ~
-sudo chmod -R u+X ~
+# Files the containers should only have read access to
+sudo chmod -R o+rX public
 
-sudo chmod u+x        permissions_setter.sh
-sudo chmod u+x        docker-compose
+# Files the containers will have read/write access to
+sudo chown -R :unpriv logs public/cards Caddy last_heartbeat entered_channels
+sudo chmod -R g+rwX   logs public/cards Caddy last_heartbeat entered_channels
 
-sudo chown -R :unpriv logs
-sudo chmod -R g+rwX   logs
-
-sudo chmod -R o+rX    public
-sudo chown -R :unpriv public/cards
-sudo chmod -R g+rwX   public/cards
-
-sudo chown -R :unpriv Caddy
-sudo chmod -R g+rwX   Caddy
-
-sudo touch            last_heartbeat
-sudo chown :unpriv    last_heartbeat
-sudo chmod g+rw       last_heartbeat
-
-sudo touch            entered_channels.txt
-sudo chown :unpriv    entered_channels.txt
-sudo chmod g+rw       entered_channels.txt
+# Helper executables
+sudo chmod u+x permissions_setter.sh docker-compose
