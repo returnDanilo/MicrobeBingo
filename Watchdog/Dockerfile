@@ -9,8 +9,10 @@ RUN chown $UNPRIV_UID_GID:$UNPRIV_UID_GID /app
 USER $UNPRIV_UID_GID:$UNPRIV_UID_GID
 
 COPY --chown=$UNPRIV_UID_GID:$UNPRIV_UID_GID . . 
-# Setting HOME is needed for pip to install for --user successfully. 
-ENV HOME /app
-RUN pip install --user --no-cache-dir --requirement requirements.txt
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-CMD ["python", "watchdog.py"]
+ENV UV_CACHE_DIR=/app/uv_cache
+RUN uv venv
+RUN uv pip install --compile-bytecode --requirement requirements.txt
+
+CMD ["uv", "run", "watchdog.py"]
