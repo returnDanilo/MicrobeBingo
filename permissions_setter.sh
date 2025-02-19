@@ -14,7 +14,6 @@ sudo chown -R $USER:$USER ~
 sudo chmod -R u=rw,g=,o= ~
 sudo chmod -R u+X ~
 
-sudo chmod u+x        deployment_helper.sh
 sudo chmod u+x        permissions_setter.sh
 sudo chmod u+x        docker-compose
 
