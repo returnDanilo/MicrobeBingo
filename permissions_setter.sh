@@ -12,15 +12,15 @@ sudo chmod -R u=rwX,g=,o= ~/microbebingo
 cd ~/microbebingo
 
 # Create things if they don't exist
-sudo touch last_heartbeat entered_channels
+sudo touch last_heartbeat entered_channels.txt
 sudo mkdir -p logs public/cards
 
 # Files the containers should only have read access to
 sudo chmod -R o+rX public
 
 # Files the containers will have read/write access to
-sudo chown -R :unpriv logs public/cards Caddy last_heartbeat entered_channels
-sudo chmod -R g+rwX   logs public/cards Caddy last_heartbeat entered_channels
+sudo chown -R :unpriv logs public/cards Caddy last_heartbeat entered_channels.txt
+sudo chmod -R g+rwX   logs public/cards Caddy last_heartbeat entered_channels.txt
 
 # Helper executables
 sudo chmod u+x permissions_setter.sh docker-compose
