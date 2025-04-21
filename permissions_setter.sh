@@ -1,26 +1,31 @@
 #!/bin/bash
 
-if [ "$(id -u)" -eq 0 ]; then
-  echo "This script should not be run as root! It's intended to be run as a user with sudo powers. Exiting."
+
+if [ "$(id -u)" != "0" ] || [ -z "$SUDO_USER" ]; then
+  echo "Script meant to be run as root! (and invoked with sudo) Exiting."
   exit 1
 fi
 
-# Everything else should be disallowed for containers
-sudo chown -R $USER:$USER ~/microbebingo
-sudo chmod -R u=rwX,g=,o= ~/microbebingo
+echo '$SUDO_USER' is $SUDO_USER
 
-cd ~/microbebingo
+cd "/home/$SUDO_USER/microbebingo"
 
-# Create things if they don't exist
-sudo touch last_heartbeat entered_channels.txt
-sudo mkdir -p logs public/cards
+umask 077
 
-# Files the containers should only have read access to
-sudo chmod -R o+rX public
+# Default to restric access for containers
+chown -R $SUDO_USER:$SUDO_USER .
+chmod -R u=rwX,g=,o= .
 
-# Files the containers will have read/write access to
-sudo chown -R :unpriv logs public/cards Caddy last_heartbeat entered_channels.txt
-sudo chmod -R g+rwX   logs public/cards Caddy last_heartbeat entered_channels.txt
+# Make sure files exist, otherwise docker will treat the paths as directories
+touch last_heartbeat entered_channels.txt
+mkdir -p logs public/cards
 
-# Helper executables
-sudo chmod u+x permissions_setter.sh docker-compose
+# Files the containers should have read access to
+chmod -R o+rX public
+
+# Files the containers should have read/write access to
+chown -R :unpriv logs public/cards Caddy last_heartbeat entered_channels.txt
+chmod -R g+rwX   logs public/cards Caddy last_heartbeat entered_channels.txt
+
+# Make helpers executable
+chmod u+x permissions_setter.sh docker-compose
