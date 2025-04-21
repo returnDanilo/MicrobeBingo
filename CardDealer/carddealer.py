@@ -20,7 +20,7 @@ def ctrl_c_handler(sig, frame):
 signal.signal(signal.SIGINT, ctrl_c_handler)
 signal.signal(signal.SIGTERM, ctrl_c_handler)
 
-logger = logging.getLogger("microbebingo")
+logger = logging.getLogger("carddealer")
 logging.config.dictConfig(yaml.safe_load(Path("logconfig.yaml").read_text()))
 
 CARDDEALER_USERNAME = "microbebingo"

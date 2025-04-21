@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from os import environ, utime
-import sys, string, asyncio, requests, subprocess, signal
+import sys, string, asyncio, requests, subprocess, signal, logging
 from datetime import datetime, timedelta
 from twitchio.ext import commands, routines
 #import code
@@ -13,6 +13,8 @@ def ctrl_c_handler(sig, frame):
 	raise KeyboardInterrupt
 signal.signal(signal.SIGINT, ctrl_c_handler)
 signal.signal(signal.SIGTERM, ctrl_c_handler)
+
+logging.basicConfig(filename="logs/watchdog_debug.log", encoding="utf-8", level=logging.DEBUG)
 
 CARDDEALER_USERNAME = "microbebingo"
 WATCHDOG_USERNAME = "dogelectus"

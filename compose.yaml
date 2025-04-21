@@ -49,3 +49,4 @@ services:
       - TZ=America/Sao_Paulo
     volumes:
       - ./last_heartbeat:/app/last_heartbeat
+      - ./logs:/app/logs

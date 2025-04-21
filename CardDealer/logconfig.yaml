@@ -8,13 +8,13 @@ handlers:
   root_handler:
     class: logging.handlers.RotatingFileHandler
     formatter: myformatter
-    filename: logs/debug.log
+    filename: logs/carddealer_debug.log
     maxBytes: 10000000
     backupCount: 3
-  microbebingo_handler:
+  carddealer_handler:
     class: logging.handlers.RotatingFileHandler
     formatter: myformatter
-    filename: logs/microbebingo.log
+    filename: logs/carddealer.log
     maxBytes: 10000000
     backupCount: 3
 loggers:
@@ -22,7 +22,7 @@ loggers:
     level: DEBUG
     handlers:
     - root_handler
-  microbebingo:
+  carddealer:
     level: INFO
     handlers:
-    - microbebingo_handler
+    - carddealer_handler
