@@ -1,8 +1,6 @@
 # Microbe Bingo server setup
 
-These are instructions for developers. If you want to make normal use of the bot, see [microbebingo.org](https://microbebingo.org/).
-
----
+**Note:** These are instructions for developers. For regular use of the bot, see instructions at [microbebingo.org](https://microbebingo.org/).
 
 ## Setting up the twitch account
 
@@ -110,15 +108,15 @@ Here is how I set up my VM:
 
 	The important bit it to use no-service-account and no-scopes.
 
-	In this example, a debian 12 boot disk image is used. By the time you read this, you will probably want a more updated image.
+	In this example, a debian 12 boot disk image is used. You'll probably want a more updated image by the time you read this.
 
-	Get one from `gcloud compute images list | grep debian`
+	Get an image from `gcloud compute images list | grep debian`
 
 	In this case I used `image-family`. The one you might get from the GUI might just be image
 
 	These settings set up a free tier gcp vm.
 
-	Here, we set our ssh key. Google will create a user for you based on this username.
+    GCP will create a unix user named after the name specified in the ssh-keys field. It will also put the user in the sudoers file.
 
 1. Find out the public ipv4 assigned to the vm:
 
@@ -162,11 +160,8 @@ Here is how I set up my VM:
 		ssh myvm
 
 1. Type 'yes' to accept the fingerprint offered by the server for the first time.
-1. Now you should be logged in the remote machine! Let's continue with the setup. This should take a minute..
+1. Now you should be logged in to the remote machine! Let's set some post install options:
 
-		# in case you mindlessly paste this and something breaks silently
-		set -e
-		
 		# disable man pages refreshing because it's slow and hangs
 		sudo systemctl mask man-db.timer && sudo systemctl stop man-db.timer
 		echo "set man-db/auto-update false" | sudo debconf-communicate && sudo dpkg-reconfigure man-db --frontend=noninteractive
@@ -200,21 +195,26 @@ Here is how I set up my VM:
 		sudo chsh -s /usr/bin/fish $USER
 		fish -c "set -U fish_greeting ''"
 		
-		# make sure everything is good
+		# make sure every option has taken effect
 		sudo reboot
 
 ## Setting up the containers
 
 1. Create a `credentials` file to store your secrets. They'll be passed as env vars to the containers. Use this format:
 
-		CLIENT_ID=...
-		CLIENT_SECRET=...
+        CLIENT_ID=...
+        CLIENT_SECRET=...
 
-		CARDDEALER_REFRESH_TOKEN=...
-		CARDDEALER_ACCESS_TOKEN=...
+        CARDDEALER_USERNAME=...
+        WATCHDOG_USERNAME=...
 
-		WATCHDOG_REFRESH_TOKEN=...
-		WATCHDOG_ACCESS_TOKEN=...
+        CARDDEALER_REFRESH_TOKEN=...
+        CARDDEALER_ACCESS_TOKEN=...
+
+        WATCHDOG_REFRESH_TOKEN=...
+        WATCHDOG_ACCESS_TOKEN=...
+
+        OPENAI_API_KEY=...
 
 1. Create a `entered_channels.txt` file to store the channels to be connected to upon startup. Use one twitch username per line. Entries will be added/removed from this file as users use the `!bingoenter`/`!bingoleave` commands.
 
@@ -223,7 +223,7 @@ Here is how I set up my VM:
 		rsync --verbose --progress --recursive --exclude ".git" /your_local_machine/microbebingo myvm:"~"
 		ssh myvm "~/microbebingo/permissions_setter.sh"
 
-1. ssh in using the `myvmTmux` alias when you want to get a shell. Use the `myvm` alias otherwise.
+1. ssh-in using the `myvmTmux` alias when you want to get a shell. Use the `myvm` alias otherwise.
 
 		ssh myvmTmux
 		cd ~/microbebingo
@@ -232,7 +232,7 @@ Here is how I set up my VM:
 
 		./docker-compose up
 
-1. Check if everything is working: Go to https://www.twitch.tv/popout/dogelectus/chat?popout= and open a card png image.
+1. Check if everything is working: Go to https://www.twitch.tv/popout/your_watchdog_username_here/chat?popout= and open a card png image.
 
-	(you might not see the first message if one container logs into twitch before the other. a little race condition I might fix some time🤷)
+	(you might not see the first message if one container logs into twitch before the other. it's a little race condition I might fix at some point)
 

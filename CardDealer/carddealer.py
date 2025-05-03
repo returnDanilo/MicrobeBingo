@@ -23,8 +23,6 @@ signal.signal(signal.SIGTERM, ctrl_c_handler)
 logger = logging.getLogger("carddealer")
 logging.config.dictConfig(yaml.safe_load(Path("logconfig.yaml").read_text()))
 
-CARDDEALER_USERNAME = "microbebingo"
-WATCHDOG_USERNAME = "dogelectus"
 ENTERED_CHANNELS_PATH = "entered_channels.txt"
 CARDS_DIR = "/var/www/html/cards/"
 
@@ -65,7 +63,7 @@ async def token_refresher():
 class MyBot(commands.Bot):
 
 	def __init__(self):
-		super().__init__(token=environ["CARDDEALER_ACCESS_TOKEN"], prefix='!', initial_channels=[*entered_channels,CARDDEALER_USERNAME])
+		super().__init__(token=environ["CARDDEALER_ACCESS_TOKEN"], prefix='!', initial_channels=[*entered_channels,environ["CARDDEALER_USERNAME"]])
 
 	async def event_ready(self):
 		print(f"=========================================")
@@ -89,7 +87,7 @@ class MyBot(commands.Bot):
 		piccode = subprocess.run(['python3', 'make_bingo_card.py'], capture_output=True, text=True).stdout.strip()
 		await ctx.send(f"{ctx.author.name} Here's your card: GivePLZ microbebingo.org/{piccode}.png")
 
-		if ctx.author.name != WATCHDOG_USERNAME: # don't polute the log
+		if ctx.author.name != environ["WATCHDOG_USERNAME"]: # don't polute the log
 			logger.info("getcard,{}".format({"author":ctx.author.name,"channel":ctx.channel.name,"piccode":piccode}))
 
 	@commands.command()
@@ -169,7 +167,7 @@ class MyBot(commands.Bot):
 	@commands.command()
 	async def bingoenter(self, ctx: commands.Context):
 		global entered_channels
-		if ctx.channel.name == CARDDEALER_USERNAME:
+		if ctx.channel.name == environ["CARDDEALER_USERNAME"]:
 			if ctx.author.name in entered_channels:
 				await ctx.send(f"{ctx.author.name} I already joined this chat OSFrog Use !getcard to get a bingo card.")
 			else:
@@ -188,7 +186,7 @@ class MyBot(commands.Bot):
 	@commands.command()
 	async def bingoleave(self, ctx: commands.Context):
 		global entered_channels
-		if ctx.channel.name in [CARDDEALER_USERNAME, ctx.author.name]:
+		if ctx.channel.name in [environ["CARDDEALER_USERNAME"], ctx.author.name]:
 			if ctx.author.name in entered_channels:
 				await ctx.send(f"{ctx.author.name} Leaving your chat now! Boop beep MrDestructoid")
 				await self.part_channels([ctx.author.name])

@@ -16,13 +16,11 @@ signal.signal(signal.SIGTERM, ctrl_c_handler)
 
 logging.basicConfig(filename="logs/watchdog_debug.log", encoding="utf-8", level=logging.DEBUG)
 
-CARDDEALER_USERNAME = "microbebingo"
-WATCHDOG_USERNAME = "dogelectus"
 REPLY_TO_LOOK_FOR = "Here's your card"
 
 @routines.routine(minutes=30)
 async def ask_for_card():
-	await bot.get_channel(WATCHDOG_USERNAME).send("!getcard")
+	await bot.get_channel(environ["WATCHDOG_USERNAME"]).send("!getcard")
 
 # refer to the carddealer implementation should any code be modified
 @routines.routine(hours=1337)
@@ -47,13 +45,13 @@ async def token_refresher():
 
 class MyBot(commands.Bot):
 	def __init__(self):
-		super().__init__(token=environ["WATCHDOG_ACCESS_TOKEN"], prefix='!', initial_channels=[WATCHDOG_USERNAME])
+		super().__init__(token=environ["WATCHDOG_ACCESS_TOKEN"], prefix='!', initial_channels=[environ["WATCHDOG_USERNAME"]])
 
 	async def event_ready(self):
 		print(f"-----------------------------------------")
 		print(f"Watchdog 👀 🐾")
 		print(f"Logged in as: {self.nick}")
-		print(f"Listening for messages from: {CARDDEALER_USERNAME}")
+		print(f"Listening for messages from: {environ["CARDDEALER_USERNAME"]}")
 		print(f"on channel: {self.connected_channels[0].name}")
 		print(f"that match the string: \"{REPLY_TO_LOOK_FOR}\"")
 		print(f"-----------------------------------------")
@@ -61,7 +59,7 @@ class MyBot(commands.Bot):
 		ask_for_card.start()
 
 	async def event_message(self, msg):
-		if msg.author and msg.author.name == CARDDEALER_USERNAME and REPLY_TO_LOOK_FOR in msg.content:  
+		if msg.author and msg.author.name == environ["CARDDEALER_USERNAME"] and REPLY_TO_LOOK_FOR in msg.content:
 			utime("last_heartbeat") # like a unix "touch" command
 
 
