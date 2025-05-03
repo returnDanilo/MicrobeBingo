@@ -22,7 +22,10 @@ A twitch chatbot that sends you microbe-themed bingo cards upon request!
 
 If you want to compile the source code yourself, see instructions [here](development.md).
 
+### Acknowledgements
+
+Thanks to @faezaria on twitch for sketching the initial card design and for choosing the microbe pics!
+
 ### License
 
-The code is released under the MIT license. The images are not; they are from various authors. They are used in this project in good faith, for educational purposes. In the future I'll try to track every author and give proper attribution; for now, you are likely to find an image source by googling for it.
-
+The code is released under the MIT license. The images are not; they are from various authors. They are used in this project in good faith, for educational purposes. In the future I'll try to track every author and give proper attribution; for now, you are likely to find the source by googling it.
