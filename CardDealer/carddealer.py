@@ -1,15 +1,21 @@
-#!/usr/bin/env python3
-
-import string, asyncio, requests, subprocess, logging, logging.config, yaml, signal, sys, re
+import re
+import sys
+import yaml
+import string
+import signal
+import asyncio
+import logging
+import requests
+import subprocess
+import logging.config
 from datetime import datetime, timedelta
 from os import path, listdir, remove, environ
 from urllib.request import urlretrieve, urlcleanup
 from pathlib import Path
 from base64 import b64encode
+
 from twitchio.ext import commands, routines
 from openai import OpenAI
-# import code
-# code.interact(local=locals())
 
 # Cancel tasks before exiting otherwise logging will complain. See https://stackoverflow.com/a/64690062/13412674.
 def ctrl_c_handler(sig, frame):

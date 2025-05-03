@@ -1,11 +1,14 @@
-#!/usr/bin/env python3
-
+import sys
+import signal
+import string
+import asyncio
+import logging
+import requests
+import subprocess
 from os import environ, utime
-import sys, string, asyncio, requests, subprocess, signal, logging
 from datetime import datetime, timedelta
+
 from twitchio.ext import commands, routines
-#import code
-#code.interact(local=locals())
 
 def ctrl_c_handler(sig, frame):
 	for task in asyncio.all_tasks(bot.loop):
