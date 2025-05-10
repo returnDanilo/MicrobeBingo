@@ -53,7 +53,7 @@ class MyBot(commands.Bot):
 		print(f"-----------------------------------------")
 		print(f"Watchdog 👀 🐾")
 		print(f"Logged in as: {self.nick}")
-		print(f"Listening for messages from: {environ["CARDDEALER_USERNAME"]}")
+		print(f"Listening for messages from: {environ['CARDDEALER_USERNAME']}")
 		print(f"on channel: {self.connected_channels[0].name}")
 		print(f"that match the string: \"{REPLY_TO_LOOK_FOR}\"")
 		print(f"-----------------------------------------")
